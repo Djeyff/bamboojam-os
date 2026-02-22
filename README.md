@@ -117,3 +117,25 @@ node import-sheets.js --period-settlements
 ---
 
 *Google Sheets = historical record. Notion = live system going forward.*
+
+---
+
+## Authentication
+
+3-role PIN system. Add these to Vercel environment variables:
+
+```
+ADMIN_PIN=<Jeff's PIN>
+FRED_PIN=<Fred's PIN>
+SYLVIE_PIN=<Sylvie's PIN>
+```
+
+| Role | Access |
+|------|--------|
+| **Jeff (Admin)** | Full access — all pages, all data, all splits |
+| **Fred** | Full access — expenses, revenues, periods, both ledgers |
+| **Sylvie** | Expenses, revenues, periods, **her ledger only** — Fred's ledger & share are hidden |
+
+If `ADMIN_PIN` is not set → open access (development mode).
+
+**Login flow:** Choose your name → enter PIN → 30-day session cookie.
