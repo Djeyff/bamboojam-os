@@ -33,7 +33,7 @@ Vacation rental management system for **BamboojamVilla**, Punta Cana, DR.
 
 | Database | ID |
 |----------|----|
-| 💰 Expenses | `30f00b56-b6fa-8184-8a3f-dc45a01dd564` |
+| 💰 Expenses | `30f00b56-b6fa-818d-aca5-dc439e037164` |
 | 📈 Revenues | `30f00b56-b6fa-812b-96ea-d9f4b3a445fc` |
 | 📊 Period Settlements | `30f00b56-b6fa-8101-a842-e721ae27e6e6` |
 | 👤 Sylvie Ledger | `30f00b56-b6fa-81f3-8851-e2bdb835f31f` |
@@ -48,7 +48,7 @@ Vacation rental management system for **BamboojamVilla**, Punta Cana, DR.
 ```
 NOTION_TOKEN=secret_xxxxx
 
-BAMBOOJAM_CONFIG={"databases":{"expenses":"30f00b56-b6fa-8184-8a3f-dc45a01dd564","revenues":"30f00b56-b6fa-812b-96ea-d9f4b3a445fc","periods":"30f00b56-b6fa-8101-a842-e721ae27e6e6","sylvieLedger":"30f00b56-b6fa-81f3-8851-e2bdb835f31f","fredLedger":"30f00b56-b6fa-81fc-bad5-d2ac34451e19"}}
+BAMBOOJAM_CONFIG={"databases":{"expenses":"30f00b56-b6fa-818d-aca5-dc439e037164","revenues":"30f00b56-b6fa-812b-96ea-d9f4b3a445fc","periods":"30f00b56-b6fa-8101-a842-e721ae27e6e6","sylvieLedger":"30f00b56-b6fa-81f3-8851-e2bdb835f31f","fredLedger":"30f00b56-b6fa-81fc-bad5-d2ac34451e19"}}
 ```
 
 ---
