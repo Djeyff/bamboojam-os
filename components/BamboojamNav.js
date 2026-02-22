@@ -1,17 +1,30 @@
 'use client';
 import { useState } from 'react';
 
-const links = [
-  { href: '/',             label: 'Dashboard', icon: '📊' },
-  { href: '/expenses',     label: 'Expenses',  icon: '💸' },
-  { href: '/revenues',     label: 'Revenues',  icon: '📈' },
-  { href: '/periods',      label: 'Periods',   icon: '📊' },
-  { href: '/fredledger',   label: 'Fred',      icon: '👤' },
-  { href: '/sylvieledger', label: 'Sylvie',    icon: '👤' },
+const ALL_LINKS = [
+  { href: '/',             label: 'Dashboard', icon: '📊', roles: ['admin','fred','sylvie'] },
+  { href: '/expenses',     label: 'Expenses',  icon: '💸', roles: ['admin','fred','sylvie'] },
+  { href: '/revenues',     label: 'Revenues',  icon: '📈', roles: ['admin','fred','sylvie'] },
+  { href: '/periods',      label: 'Periods',   icon: '📊', roles: ['admin','fred','sylvie'] },
+  { href: '/sylvieledger', label: 'Sylvie',    icon: '🌟', roles: ['admin','fred','sylvie'] },
+  { href: '/fredledger',   label: 'Fred',      icon: '🤝', roles: ['admin','fred'] }, // Sylvie cannot see
 ];
 
-export default function BamboojamNav() {
+const ROLE_LABELS = {
+  admin:  { label: 'Jeff (Admin)', icon: '👑', color: '#d4a853' },
+  fred:   { label: 'Fred',         icon: '🤝', color: '#60a5fa' },
+  sylvie: { label: 'Sylvie',       icon: '🌟', color: '#34d399' },
+};
+
+export default function BamboojamNav({ role = 'admin' }) {
   const [open, setOpen] = useState(false);
+  const links = ALL_LINKS.filter(l => !l.roles || l.roles.includes(role));
+  const roleInfo = ROLE_LABELS[role] || ROLE_LABELS.admin;
+
+  async function handleLogout() {
+    await fetch('/api/login', { method: 'DELETE' });
+    window.location.href = '/login';
+  }
 
   return (
     <header className="sticky top-0 z-50" style={{
@@ -20,7 +33,7 @@ export default function BamboojamNav() {
     }}>
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
 
-        {/* Logo — mirrors ConstructionNav branding block */}
+        {/* Logo */}
         <a href="/" className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-lg flex items-center justify-center text-base font-bold"
             style={{ background: 'linear-gradient(135deg, #d4a853, #c49a45)', color: '#0f1a2e' }}>
@@ -42,6 +55,20 @@ export default function BamboojamNav() {
             </a>
           ))}
         </nav>
+
+        {/* Right: role badge + logout */}
+        <div className="hidden md:flex items-center gap-3">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <span className="text-xs">{roleInfo.icon}</span>
+            <span className="text-xs font-medium" style={{ color: roleInfo.color }}>{roleInfo.label}</span>
+          </div>
+          <button onClick={handleLogout}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+            style={{ color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.04)' }}>
+            Logout
+          </button>
+        </div>
 
         {/* Hamburger */}
         <button onClick={() => setOpen(!open)} className="md:hidden flex flex-col gap-1.5 p-2" aria-label="Menu">
@@ -66,6 +93,15 @@ export default function BamboojamNav() {
                 <span className="text-sm font-semibold text-white">{l.label}</span>
               </a>
             ))}
+          </div>
+          {/* Mobile: role + logout */}
+          <div className="mt-3 flex items-center justify-between px-1">
+            <span className="text-xs" style={{ color: roleInfo.color }}>
+              {roleInfo.icon} Logged in as {roleInfo.label}
+            </span>
+            <button onClick={handleLogout} className="text-xs" style={{ color: '#64748b' }}>
+              Logout →
+            </button>
           </div>
         </nav>
       )}

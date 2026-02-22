@@ -1,17 +1,19 @@
 import { getDB } from '@/lib/config';
 import { queryDB, getTitle, getNumber, getSelect, getDate, getText } from '@/lib/notion';
+import { getRole, canSeeFred } from '@/lib/auth';
 import BamboojamNav from '@/components/BamboojamNav';
 
 export const dynamic = 'force-dynamic';
 
 const fmt = (n) => { const a=Math.abs(n||0); return (n<0?'-':'')+a.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}); };
 
-// Revenue split
 const SYLVIE_PCT = 0.15;
-const FRED_PCT   = 0.425;
 const JEFF_PCT   = 0.425;
+const FRED_PCT   = 0.425;
 
 export default async function Dashboard({ searchParams }) {
+  const role = getRole();
+  const showFred = canSeeFred(role);
   const params = await searchParams;
   const selectedYear = params?.year || null;
 
@@ -20,7 +22,9 @@ export default async function Dashboard({ searchParams }) {
   try { revenues     = await queryDB(getDB('revenues'),     null, [{property:'Date',direction:'descending'}]); } catch(e){}
   try { periods      = await queryDB(getDB('periods'),      null, [{property:'End Date',direction:'descending'}]); } catch(e){}
   try { sylvieLedger = await queryDB(getDB('sylvieLedger'), null, [{property:'Date',direction:'descending'}]); } catch(e){}
-  try { fredLedger   = await queryDB(getDB('fredLedger'),   null, [{property:'Date',direction:'descending'}]); } catch(e){}
+  if (showFred) {
+    try { fredLedger = await queryDB(getDB('fredLedger'), null, [{property:'Date',direction:'descending'}]); } catch(e){}
+  }
 
   const allExp = expenses.map(e => ({
     desc:getTitle(e), amount:getNumber(e,'Amount')||0,
@@ -74,7 +78,7 @@ export default async function Dashboard({ searchParams }) {
 
   return (
     <div className="min-h-screen" style={{background:'linear-gradient(180deg,#0f1a2e 0%,#141f35 100%)'}}>
-      <BamboojamNav />
+      <BamboojamNav role={role} />
       <main className="max-w-7xl mx-auto px-4 py-8">
 
         {/* Header + Year Filter */}
@@ -84,12 +88,12 @@ export default async function Dashboard({ searchParams }) {
             <p className="text-sm mt-1" style={{color:'#d4a853'}}>BamboojamVilla · {label} · Amounts in DOP</p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <a href="/" className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            <a href="/" className="px-3 py-1.5 rounded-lg text-sm font-medium"
               style={!selectedYear?{background:'#d4a853',color:'#0f1a2e'}:{background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.6)'}}>
               All Time
             </a>
             {years.map(y=>(
-              <a key={y} href={`/?year=${y}`} className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              <a key={y} href={`/?year=${y}`} className="px-3 py-1.5 rounded-lg text-sm font-medium"
                 style={selectedYear===y?{background:'#d4a853',color:'#0f1a2e'}:{background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.6)'}}>
                 {y}
               </a>
@@ -97,22 +101,39 @@ export default async function Dashboard({ searchParams }) {
           </div>
         </div>
 
-        {/* Revenue Split Banner */}
+        {/* Revenue Split Banner — role-aware */}
         <div className="rounded-xl p-5 mb-6" style={{background:'linear-gradient(135deg,rgba(212,168,83,0.1),rgba(212,168,83,0.04))',border:'1px solid rgba(212,168,83,0.2)'}}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{color:'#d4a853'}}>Revenue Split — {label}</p>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[
-              {label:'Total Revenue',   val:fmt(totalRevenue),   color:'#fff'},
-              {label:'Total Expenses',  val:`-${fmt(totalExpenses)}`, color:'#f87171'},
-              {label:'Net Revenue',     val:fmt(netRevenue),     color:netRevenue>=0?'#34d399':'#f87171'},
-              {label:'Sylvie (15%)',    val:fmt(sylvieShare),    color:'#d4a853'},
-              {label:'Jeff = Fred (42.5%)', val:fmt(jeffShare)+' ea', color:'#60a5fa'},
-            ].map(({label,val,color})=>(
-              <div key={label}>
-                <p className="text-xs mb-1" style={{color:'#64748b'}}>{label}</p>
-                <p className="text-xl font-bold font-mono" style={{color}}>{val}</p>
+          <div className={`grid gap-4 ${showFred ? 'grid-cols-2 md:grid-cols-5' : 'grid-cols-2 md:grid-cols-4'}`}>
+            <div>
+              <p className="text-xs mb-1" style={{color:'#64748b'}}>Total Revenue</p>
+              <p className="text-xl font-bold text-white font-mono">{fmt(totalRevenue)}</p>
+            </div>
+            <div>
+              <p className="text-xs mb-1" style={{color:'#64748b'}}>Total Expenses</p>
+              <p className="text-xl font-bold text-red-400 font-mono">-{fmt(totalExpenses)}</p>
+            </div>
+            <div>
+              <p className="text-xs mb-1" style={{color:'#64748b'}}>Net Revenue</p>
+              <p className={`text-xl font-bold font-mono ${netRevenue>=0?'text-emerald-400':'text-red-400'}`}>{fmt(netRevenue)}</p>
+            </div>
+            <div>
+              <p className="text-xs mb-1" style={{color:'#d4a853'}}>Sylvie (15%)</p>
+              <p className="text-xl font-bold font-mono" style={{color:'#d4a853'}}>{fmt(sylvieShare)}</p>
+            </div>
+            {showFred ? (
+              <>
+                <div>
+                  <p className="text-xs mb-1" style={{color:'#94a3b8'}}>Jeff = Fred (42.5%)</p>
+                  <p className="text-xl font-bold font-mono text-blue-400">{fmt(jeffShare)} ea</p>
+                </div>
+              </>
+            ) : (
+              <div>
+                <p className="text-xs mb-1" style={{color:'#94a3b8'}}>Jeff's Share (42.5%)</p>
+                <p className="text-xl font-bold font-mono text-blue-400">{fmt(jeffShare)}</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -219,7 +240,9 @@ export default async function Dashboard({ searchParams }) {
             <table className="w-full">
               <thead>
                 <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
-                  {['Period','End Date','Status','Net Revenue','Sylvie 15%','Jeff 42.5%','Fred 42.5%'].map(h=>(
+                  {['Period','End Date','Status','Net Revenue','Sylvie 15%',
+                    ...(showFred?['Jeff 42.5%','Fred 42.5%']:['Jeff 42.5%'])
+                  ].map(h=>(
                     <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide" style={{color:'#64748b'}}>{h}</th>
                   ))}
                 </tr>
@@ -243,12 +266,12 @@ export default async function Dashboard({ searchParams }) {
                       <td className="px-6 py-3 text-sm font-mono font-semibold" style={{color:net>=0?'#34d399':'#f87171'}}>{fmt(net)}</td>
                       <td className="px-6 py-3 text-sm font-mono" style={{color:'#d4a853'}}>{fmt(s15)}</td>
                       <td className="px-6 py-3 text-sm font-mono text-blue-400">{fmt(jf)}</td>
-                      <td className="px-6 py-3 text-sm font-mono" style={{color:'#a78bfa'}}>{fmt(jf)}</td>
+                      {showFred&&<td className="px-6 py-3 text-sm font-mono" style={{color:'#a78bfa'}}>{fmt(jf)}</td>}
                     </tr>
                   );
                 })}
                 {allPeriods.length===0&&(
-                  <tr><td colSpan={7} className="px-6 py-12 text-center text-sm" style={{color:'#64748b'}}>No periods yet.</td></tr>
+                  <tr><td colSpan={showFred?7:6} className="px-6 py-12 text-center text-sm" style={{color:'#64748b'}}>No periods yet.</td></tr>
                 )}
               </tbody>
             </table>
@@ -256,11 +279,11 @@ export default async function Dashboard({ searchParams }) {
         </div>
 
         {/* Ledger Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className={`grid grid-cols-1 gap-6 mb-8 ${showFred ? 'md:grid-cols-2' : 'md:grid-cols-1 max-w-lg'}`}>
           {/* Sylvie */}
           <div className="rounded-xl overflow-hidden" style={{background:'rgba(52,211,153,0.04)',border:'1px solid rgba(52,211,153,0.12)'}}>
             <div className="px-6 py-4 flex items-center justify-between" style={{borderBottom:'1px solid rgba(52,211,153,0.1)'}}>
-              <h3 className="text-base font-semibold text-emerald-400">👤 Sylvie Ledger</h3>
+              <h3 className="text-base font-semibold text-emerald-400">🌟 Sylvie Ledger</h3>
               <a href="/sylvieledger" className="text-xs" style={{color:'#d4a853'}}>View all →</a>
             </div>
             <div className="px-6 py-4">
@@ -283,29 +306,31 @@ export default async function Dashboard({ searchParams }) {
             </div>
           </div>
 
-          {/* Fred */}
-          <div className="rounded-xl overflow-hidden" style={{background:'rgba(251,146,60,0.04)',border:'1px solid rgba(251,146,60,0.12)'}}>
-            <div className="px-6 py-4 flex items-center justify-between" style={{borderBottom:'1px solid rgba(251,146,60,0.1)'}}>
-              <h3 className="text-base font-semibold text-orange-400">👤 Fred Ledger</h3>
-              <a href="/fredledger" className="text-xs" style={{color:'#d4a853'}}>View all →</a>
-            </div>
-            <div className="px-6 py-4">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm" style={{color:'#64748b'}}>Expenses Tracked</span>
-                <span className="text-2xl font-bold font-mono text-orange-400">{fmt(fredExpTotal)} DOP</span>
+          {/* Fred — only for admin + fred */}
+          {showFred && (
+            <div className="rounded-xl overflow-hidden" style={{background:'rgba(96,165,250,0.04)',border:'1px solid rgba(96,165,250,0.12)'}}>
+              <div className="px-6 py-4 flex items-center justify-between" style={{borderBottom:'1px solid rgba(96,165,250,0.1)'}}>
+                <h3 className="text-base font-semibold text-blue-400">🤝 Fred Ledger</h3>
+                <a href="/fredledger" className="text-xs" style={{color:'#d4a853'}}>View all →</a>
               </div>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-lg p-3" style={{background:'rgba(251,146,60,0.06)',border:'1px solid rgba(251,146,60,0.1)'}}>
-                  <p style={{color:'#94a3b8'}}>Expenses paid</p>
-                  <p className="font-mono font-semibold text-orange-400 mt-1">{fmt(fredExpTotal)}</p>
+              <div className="px-6 py-4">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm" style={{color:'#64748b'}}>Tracked Deductions</span>
+                  <span className="text-2xl font-bold font-mono text-blue-400">{fmt(fredExpTotal)} DOP</span>
                 </div>
-                <div className="rounded-lg p-3" style={{background:'rgba(96,165,250,0.06)',border:'1px solid rgba(96,165,250,0.1)'}}>
-                  <p style={{color:'#94a3b8'}}>Payments received</p>
-                  <p className="font-mono font-semibold text-blue-400 mt-1">{fmt(fredPayTotal)}</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-lg p-3" style={{background:'rgba(96,165,250,0.06)',border:'1px solid rgba(96,165,250,0.1)'}}>
+                    <p style={{color:'#94a3b8'}}>Deductions from share</p>
+                    <p className="font-mono font-semibold text-blue-400 mt-1">{fmt(fredExpTotal)}</p>
+                  </div>
+                  <div className="rounded-lg p-3" style={{background:'rgba(167,139,250,0.06)',border:'1px solid rgba(167,139,250,0.1)'}}>
+                    <p style={{color:'#94a3b8'}}>Payments settled</p>
+                    <p className="font-mono font-semibold text-purple-400 mt-1">{fmt(fredPayTotal)}</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
       </main>

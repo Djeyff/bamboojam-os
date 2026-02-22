@@ -1,6 +1,7 @@
 import { getDB } from '@/lib/config';
 import { queryDB, getTitle, getNumber, getSelect, getDate } from '@/lib/notion';
 import BamboojamNav from '@/components/BamboojamNav';
+import { getRole } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 const fmt = (n) => { const a=Math.abs(n||0); return (n<0?'-':'')+a.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}); };
@@ -17,6 +18,7 @@ const CAT_COLORS = {
 };
 
 export default async function ExpensesPage({ searchParams }) {
+  const role = getRole();
   const params      = await searchParams;
   const filterYear  = params?.year     || '';
   const filterCat   = params?.category || '';
@@ -55,7 +57,7 @@ export default async function ExpensesPage({ searchParams }) {
 
   return (
     <div className="min-h-screen" style={{background:'linear-gradient(180deg,#0f1a2e 0%,#141f35 100%)'}}>
-      <BamboojamNav />
+      <BamboojamNav role={role} />
       <main className="max-w-7xl mx-auto px-4 py-8">
 
         <div className="flex items-center justify-between mb-6">

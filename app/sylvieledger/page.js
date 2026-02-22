@@ -1,11 +1,13 @@
 import { getDB } from '@/lib/config';
 import { queryDB, getTitle, getNumber, getSelect, getDate, getText } from '@/lib/notion';
 import BamboojamNav from '@/components/BamboojamNav';
+import { getRole } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 const fmt = (n) => { const a=Math.abs(n||0); return (n<0?'-':'')+a.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}); };
 
 export default async function SylvieLedgerPage() {
+  const role = getRole();
   let entries = [];
   try { entries = await queryDB(getDB('sylvieLedger'), null, [{property:'Date',direction:'ascending'}]); } catch(e){}
 
@@ -34,7 +36,7 @@ export default async function SylvieLedgerPage() {
 
   return (
     <div className="min-h-screen" style={{background:'linear-gradient(180deg,#0f1a2e 0%,#141f35 100%)'}}>
-      <BamboojamNav />
+      <BamboojamNav role={role} />
       <main className="max-w-7xl mx-auto px-4 py-8">
 
         <div className="flex items-center justify-between mb-6">
