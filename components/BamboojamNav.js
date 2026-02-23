@@ -41,7 +41,7 @@ export default function BamboojamNav({ role = 'admin' }) {
           </div>
           <div>
             <h1 className="text-base font-bold text-white leading-tight">BamboojamVilla OS</h1>
-            <p className="text-xs leading-tight" style={{ color: '#d4a853' }}>Punta Cana, DR · Rental Manager</p>
+            <p className="text-xs leading-tight" style={{ color: '#d4a853' }}>Las Terrenas, DR · Rental Manager</p>
           </div>
         </a>
 

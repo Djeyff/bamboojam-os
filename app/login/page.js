@@ -12,7 +12,7 @@ export default function LoginPage() {
             🌴
           </div>
           <h1 className="text-2xl font-bold text-white">BamboojamVilla OS</h1>
-          <p className="text-sm mt-1" style={{ color: '#64748b' }}>Punta Cana, DR · Members only</p>
+          <p className="text-sm mt-1" style={{ color: '#64748b' }}>Las Terrenas, DR · Members only</p>
         </div>
 
         {/* Card */}

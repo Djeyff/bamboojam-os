@@ -43,16 +43,24 @@ export default async function Dashboard({ searchParams }) {
     notes:getText(p,'Notes'),
   }));
 
-  const years = [...new Set([...allExp.map(e=>e.period),...allRev.map(r=>r.period)].filter(Boolean))].sort().reverse();
-  const filteredExp = selectedYear ? allExp.filter(e=>e.period===selectedYear) : allExp;
-  const filteredRev = selectedYear ? allRev.filter(r=>r.period===selectedYear) : allRev;
+  const years = [...new Set([...allExp.map(e=>e.date?.slice(0,4)),...allRev.map(r=>r.date?.slice(0,4))].filter(Boolean))].sort().reverse();
+  const filteredExp = selectedYear ? allExp.filter(e=>e.date?.startsWith(selectedYear)) : allExp;
+  const filteredRev = selectedYear ? allRev.filter(r=>r.date?.startsWith(selectedYear)) : allRev;
 
   const totalRevenue  = filteredRev.reduce((s,r)=>s+r.amount,0);
   const totalExpenses = filteredExp.reduce((s,e)=>s+e.amount,0);
   const netRevenue    = totalRevenue - totalExpenses;
-  const sylvieShare   = Math.max(0,netRevenue)*SYLVIE_PCT;
-  const jeffShare     = Math.max(0,netRevenue)*JEFF_PCT;
-  const fredShare     = Math.max(0,netRevenue)*FRED_PCT;
+  // Sylvie share comes from actual period settlements only (started 30/10/2024)
+  const sylvieShare   = allPeriods.reduce((s,p)=>{
+    const n = p.notes?.match(/Sylvie 15%: ([\d.]+)/);
+    return s + (n ? parseFloat(n[1]) : 0);
+  }, 0);
+  const jeffShare     = allPeriods.reduce((s,p)=>{
+    const n = p.notes?.match(/Net Revenue: ([\d.]+)/);
+    const net = n ? parseFloat(n[1]) : (p.totalRevenue - p.totalExpenses);
+    return s + net * JEFF_PCT;
+  }, 0);
+  const fredShare     = jeffShare;
 
   // Category breakdown
   const catTotals={};
@@ -62,7 +70,7 @@ export default async function Dashboard({ searchParams }) {
 
   // Revenue by year
   const revByYear={};
-  allRev.forEach(r=>{ const y=r.period||'Unknown'; revByYear[y]=(revByYear[y]||0)+r.amount; });
+  allRev.forEach(r=>{ const y=r.date?.slice(0,4)||'Unknown'; revByYear[y]=(revByYear[y]||0)+r.amount; });
   const revYearSorted=Object.entries(revByYear).sort((a,b)=>a[0].localeCompare(b[0]));
   const maxRevYear=Math.max(...revYearSorted.map(([,v])=>v),1);
 
@@ -156,7 +164,7 @@ export default async function Dashboard({ searchParams }) {
               <div key={i} className="px-6 py-3 flex items-center justify-between" style={{borderBottom:'1px solid rgba(255,255,255,0.03)'}}>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{r.desc||'—'}</p>
-                  <p className="text-xs" style={{color:'#64748b'}}>{r.date||'—'} · <span style={{color:'#d4a853'}}>{r.period}</span></p>
+                  <p className="text-xs" style={{color:'#64748b'}}>{r.date||'—'} · <span style={{color:'#d4a853'}}>{r.date?.slice(0,4)||''}</span></p>
                 </div>
                 <span className="text-sm font-semibold text-emerald-400 ml-4 font-mono">{fmt(r.amount)}</span>
               </div>
@@ -335,7 +343,7 @@ export default async function Dashboard({ searchParams }) {
 
       </main>
       <footer className="mt-8 py-6 text-center text-xs" style={{borderTop:'1px solid rgba(212,168,83,0.1)',color:'#64748b'}}>
-        Powered by <strong style={{color:'#d4a853'}}>BamboojamVilla OS</strong> · Punta Cana, DR
+        Powered by <strong style={{color:'#d4a853'}}>BamboojamVilla OS</strong> · Las Terrenas, DR
       </footer>
     </div>
   );
