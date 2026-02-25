@@ -78,6 +78,7 @@ export default async function PeriodsPage() {
 
         {/* Periods Table */}
         <div className="rounded-xl overflow-hidden mb-6" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
@@ -125,6 +126,7 @@ export default async function PeriodsPage() {
               </tfoot>
             )}
           </table>
+          </div>
         </div>
 
         {/* Visual Period Cards */}

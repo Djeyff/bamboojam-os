@@ -60,25 +60,25 @@ export default async function ExpensesPage({ searchParams }) {
       <BamboojamNav role={role} />
       <main className="max-w-7xl mx-auto px-4 py-8">
 
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div>
             <h2 className="text-2xl font-bold text-white">💸 Expenses</h2>
             <p className="text-sm mt-1" style={{color:'#d4a853'}}>
               {filtered.length} entries{filterYear?` · ${filterYear}`:''}
             </p>
           </div>
-          <div className="flex gap-3">
-            <div className="rounded-lg px-4 py-2" style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
+          <div className="flex gap-2 flex-wrap">
+            <div className="rounded-lg px-3 py-1.5 sm:px-4 sm:py-2" style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
               <span className="text-xs" style={{color:'#64748b'}}>Total</span>
-              <p className="text-lg font-bold text-red-400 font-mono">{fmt(total)}</p>
+              <p className="text-sm sm:text-lg font-bold text-red-400 font-mono">{fmt(total)}</p>
             </div>
-            <div className="rounded-lg px-4 py-2" style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
+            <div className="rounded-lg px-3 py-1.5 sm:px-4 sm:py-2" style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
               <span className="text-xs" style={{color:'#64748b'}}>Operating</span>
-              <p className="text-lg font-bold text-white font-mono">{fmt(opTotal)}</p>
+              <p className="text-sm sm:text-lg font-bold text-white font-mono">{fmt(opTotal)}</p>
             </div>
-            <div className="rounded-lg px-4 py-2" style={{background:'rgba(167,139,250,0.06)',border:'1px solid rgba(167,139,250,0.15)'}}>
+            <div className="rounded-lg px-3 py-1.5 sm:px-4 sm:py-2" style={{background:'rgba(167,139,250,0.06)',border:'1px solid rgba(167,139,250,0.15)'}}>
               <span className="text-xs" style={{color:'#64748b'}}>Travaux</span>
-              <p className="text-lg font-bold font-mono" style={{color:'#a78bfa'}}>{fmt(trTotal)}</p>
+              <p className="text-sm sm:text-lg font-bold font-mono" style={{color:'#a78bfa'}}>{fmt(trTotal)}</p>
             </div>
           </div>
         </div>
@@ -131,6 +131,7 @@ export default async function ExpensesPage({ searchParams }) {
 
         {/* Table */}
         <div className="rounded-xl overflow-hidden" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
@@ -171,6 +172,7 @@ export default async function ExpensesPage({ searchParams }) {
               </tfoot>
             )}
           </table>
+          </div>
         </div>
 
       </main>

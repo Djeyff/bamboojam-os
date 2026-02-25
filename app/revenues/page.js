@@ -85,6 +85,7 @@ export default async function RevenuesPage({ searchParams }) {
 
           {/* Table */}
           <div className="lg:col-span-2 rounded-xl overflow-hidden" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
@@ -116,6 +117,7 @@ export default async function RevenuesPage({ searchParams }) {
                 </tfoot>
               )}
             </table>
+            </div>
           </div>
         </div>
       </main>

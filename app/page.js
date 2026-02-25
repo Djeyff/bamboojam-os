@@ -245,7 +245,7 @@ export default async function Dashboard({ searchParams }) {
             <a href="/periods" className="text-xs" style={{color:'#d4a853'}}>View all →</a>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[500px]">
               <thead>
                 <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
                   {['Period','End Date','Status','Net Revenue','Sylvie 15%',

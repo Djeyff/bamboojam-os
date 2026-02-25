@@ -39,9 +39,9 @@ export default function BamboojamNav({ role = 'admin' }) {
             style={{ background: 'linear-gradient(135deg, #d4a853, #c49a45)', color: '#0f1a2e' }}>
             🌴
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-base font-bold text-white leading-tight">BamboojamVilla OS</h1>
-            <p className="text-xs leading-tight" style={{ color: '#d4a853' }}>Las Terrenas, DR · Rental Manager</p>
+            <p className="text-xs leading-tight truncate" style={{ color: '#d4a853' }}>Las Terrenas, DR</p>
           </div>
         </a>
 

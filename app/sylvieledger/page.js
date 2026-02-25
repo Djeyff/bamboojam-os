@@ -85,6 +85,7 @@ export default async function SylvieLedgerPage() {
           <div className="px-6 py-4" style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
             <h3 className="text-base font-semibold text-white">Ledger Entries ({allEntries.length})</h3>
           </div>
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
@@ -121,6 +122,7 @@ export default async function SylvieLedgerPage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
 
       </main>
