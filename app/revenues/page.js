@@ -85,7 +85,32 @@ export default async function RevenuesPage({ searchParams }) {
 
           {/* Table */}
           <div className="lg:col-span-2 rounded-xl overflow-hidden" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
-            <div className="overflow-x-auto">
+            {/* Mobile Cards */}
+            <div className="sm:hidden space-y-2 p-3">
+              {filtered.map((r,i)=>(
+                <div key={i} className="rounded-lg p-3" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <p className="text-sm font-medium text-white flex-1 min-w-0">{r.desc||'—'}</p>
+                    <span className="text-sm font-bold font-mono shrink-0 text-emerald-400">{fmt(r.amount)}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {r.date && <span className="text-xs px-2 py-0.5 rounded font-mono" style={{background:'rgba(255,255,255,0.06)',color:'#64748b'}}>{r.date}</span>}
+                    {r.period && <span className="text-xs px-2 py-0.5 rounded" style={{background:'rgba(212,168,83,0.08)',color:'#d4a853'}}>{r.period}</span>}
+                  </div>
+                </div>
+              ))}
+              {filtered.length===0 && <p className="px-3 py-8 text-center text-sm" style={{color:'#64748b'}}>No revenues.</p>}
+              {filtered.length>0 && (
+                <div className="rounded-lg p-3" style={{background:'rgba(212,168,83,0.05)',border:'1px solid rgba(212,168,83,0.15)'}}>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-bold" style={{color:'#d4a853'}}>Total</span>
+                    <span className="font-mono font-bold text-emerald-400">{fmt(total)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Desktop Table */}
+            <div className="hidden sm:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>

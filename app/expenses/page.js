@@ -131,7 +131,35 @@ export default async function ExpensesPage({ searchParams }) {
 
         {/* Table */}
         <div className="rounded-xl overflow-hidden" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
-          <div className="overflow-x-auto">
+          {/* Mobile Cards */}
+          <div className="sm:hidden space-y-2 p-3">
+            {filtered.map((e,i)=>(
+              <div key={i} className="rounded-lg p-3" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <p className="text-sm font-medium text-white flex-1 min-w-0">{e.desc}</p>
+                  <span className="text-sm font-bold font-mono shrink-0 text-red-400">{fmt(e.amount)}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {e.date && <span className="text-xs px-2 py-0.5 rounded font-mono" style={{background:'rgba(255,255,255,0.06)',color:'#64748b'}}>{e.date}</span>}
+                  {e.category && <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                    style={{background:`${CAT_COLORS[e.category]||'#94a3b8'}18`,color:CAT_COLORS[e.category]||'#94a3b8'}}>{e.category}</span>}
+                  {e.source && <span className="text-xs px-2 py-0.5 rounded font-medium" style={{color:e.source==='Travaux'?'#a78bfa':'#64748b',background:'rgba(255,255,255,0.06)'}}>{e.source}</span>}
+                  {e.period && <span className="text-xs px-2 py-0.5 rounded" style={{background:'rgba(255,255,255,0.06)',color:'#64748b'}}>{e.period}</span>}
+                </div>
+              </div>
+            ))}
+            {filtered.length===0 && <p className="px-3 py-8 text-center text-sm" style={{color:'#64748b'}}>No expenses match the selected filters.</p>}
+            {filtered.length>0 && (
+              <div className="rounded-lg p-3" style={{background:'rgba(212,168,83,0.05)',border:'1px solid rgba(212,168,83,0.15)'}}>
+                <div className="flex justify-between text-sm">
+                  <span className="font-bold" style={{color:'#d4a853'}}>Total</span>
+                  <span className="font-mono font-bold text-red-400">{fmt(total)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Desktop Table */}
+          <div className="hidden sm:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>

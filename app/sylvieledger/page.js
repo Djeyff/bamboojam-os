@@ -85,7 +85,33 @@ export default async function SylvieLedgerPage() {
           <div className="px-6 py-4" style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
             <h3 className="text-base font-semibold text-white">Ledger Entries ({allEntries.length})</h3>
           </div>
-          <div className="overflow-x-auto">
+          {/* Mobile Cards */}
+          <div className="sm:hidden space-y-2 p-3">
+            {withBalance.map((e,i)=>(
+              <div key={i} className="rounded-lg p-3" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <p className="text-sm font-medium text-white flex-1 min-w-0">{e.desc}</p>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold font-mono" style={{color:typeColor[e.type]||'#fff'}}>
+                      {e.type==='Debit'?'-':''}{fmt(e.amount)}
+                    </p>
+                    <p className="text-xs font-mono" style={{color:e.balance>=0?'#34d399':'#f87171'}}>
+                      {e.balance>=0?'+':''}{fmt(e.balance)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {e.date && <span className="text-xs px-2 py-0.5 rounded font-mono" style={{background:'rgba(255,255,255,0.06)',color:'#64748b'}}>{e.date}</span>}
+                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                    style={{background:typeBg[e.type]||'rgba(148,163,184,0.12)',color:typeColor[e.type]||'#94a3b8'}}>{e.type}</span>
+                  {e.notes && <span className="text-xs px-2 py-0.5 rounded" style={{background:'rgba(255,255,255,0.06)',color:'#64748b'}}>{e.notes}</span>}
+                </div>
+              </div>
+            ))}
+            {withBalance.length===0 && <p className="px-3 py-8 text-center text-sm" style={{color:'#64748b'}}>No ledger entries.</p>}
+          </div>
+          {/* Desktop Table */}
+          <div className="hidden sm:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>

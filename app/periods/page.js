@@ -78,7 +78,43 @@ export default async function PeriodsPage() {
 
         {/* Periods Table */}
         <div className="rounded-xl overflow-hidden mb-6" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
-          <div className="overflow-x-auto">
+          {/* Mobile Cards */}
+          <div className="sm:hidden space-y-2 p-3">
+            {allPeriods.map((p,i)=>(
+              <div key={i} className="rounded-lg p-3" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white">{p.name}</p>
+                    {p.notes && <p className="text-xs mt-0.5 truncate" style={{color:'#64748b'}}>{p.notes}</p>}
+                  </div>
+                  <span className="text-sm font-bold font-mono shrink-0" style={{color:p.net>=0?'#34d399':'#f87171'}}>{fmt(p.net)}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {p.endDate && <span className="text-xs px-2 py-0.5 rounded font-mono" style={{background:'rgba(255,255,255,0.06)',color:'#64748b'}}>{p.endDate}</span>}
+                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                    style={{background:`${statusColors[p.status]||'#94a3b8'}20`,color:statusColors[p.status]||'#94a3b8'}}>{p.status||'Unknown'}</span>
+                </div>
+                <div className="flex flex-wrap gap-3 text-xs">
+                  <span style={{color:'#d4a853'}}>Sylvie: <span className="font-mono font-semibold">{fmt(p.sylvie15)}</span></span>
+                  <span className="text-blue-400">Jeff: <span className="font-mono font-semibold">{fmt(p.jeff)}</span></span>
+                  {showFred && <span style={{color:'#a78bfa'}}>Fred: <span className="font-mono font-semibold">{fmt(p.fred)}</span></span>}
+                </div>
+              </div>
+            ))}
+            {allPeriods.length===0 && <p className="px-3 py-8 text-center text-sm" style={{color:'#64748b'}}>No periods yet.</p>}
+            {allPeriods.length>0 && (
+              <div className="rounded-lg p-3" style={{background:'rgba(212,168,83,0.05)',border:'1px solid rgba(212,168,83,0.15)'}}>
+                <div className="flex flex-wrap gap-3 text-xs">
+                  <span className="text-emerald-400">Net: <span className="font-mono font-bold">{fmt(totalNet)}</span></span>
+                  <span style={{color:'#d4a853'}}>Sylvie: <span className="font-mono font-bold">{fmt(totalSylvie)}</span></span>
+                  <span className="text-blue-400">Jeff: <span className="font-mono font-bold">{fmt(totalJeff)}</span></span>
+                  {showFred && <span style={{color:'#a78bfa'}}>Fred: <span className="font-mono font-bold">{fmt(totalJeff)}</span></span>}
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Desktop Table */}
+          <div className="hidden sm:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>

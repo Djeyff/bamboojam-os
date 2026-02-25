@@ -244,7 +244,36 @@ export default async function Dashboard({ searchParams }) {
             <h3 className="text-base font-semibold text-white">📊 Period Settlements</h3>
             <a href="/periods" className="text-xs" style={{color:'#d4a853'}}>View all →</a>
           </div>
-          <div className="overflow-x-auto">
+          {/* Mobile Cards */}
+          <div className="sm:hidden space-y-2 p-3">
+            {allPeriods.slice(0,6).map((p,i)=>{
+              const notesNet=p.notes.match(/Net Revenue: ([\d.]+)/)?.[1];
+              const net=notesNet?parseFloat(notesNet):(p.totalRevenue-p.totalExpenses);
+              const s15=net*SYLVIE_PCT, jf=net*JEFF_PCT;
+              const sc={'Open':'#fbbf24','Closed':'#60a5fa','Paid':'#34d399'};
+              return (
+                <div key={i} className="rounded-lg p-3" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <p className="text-sm font-semibold text-white flex-1 min-w-0">{p.name}</p>
+                    <span className="text-sm font-bold font-mono shrink-0" style={{color:net>=0?'#34d399':'#f87171'}}>{fmt(net)}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {p.endDate && <span className="text-xs px-2 py-0.5 rounded" style={{background:'rgba(255,255,255,0.06)',color:'#94a3b8'}}>{p.endDate}</span>}
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                      style={{background:`${sc[p.status]||'#94a3b8'}20`,color:sc[p.status]||'#94a3b8'}}>{p.status||'Unknown'}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-3 text-xs">
+                    <span style={{color:'#d4a853'}}>Sylvie: <span className="font-mono font-semibold">{fmt(s15)}</span></span>
+                    <span className="text-blue-400">Jeff: <span className="font-mono font-semibold">{fmt(jf)}</span></span>
+                    {showFred && <span style={{color:'#a78bfa'}}>Fred: <span className="font-mono font-semibold">{fmt(jf)}</span></span>}
+                  </div>
+                </div>
+              );
+            })}
+            {allPeriods.length===0 && <p className="px-3 py-8 text-center text-sm" style={{color:'#64748b'}}>No periods yet.</p>}
+          </div>
+          {/* Desktop Table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full min-w-[500px]">
               <thead>
                 <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
