@@ -105,7 +105,8 @@ export default async function ExpensesPage({ searchParams }) {
 
   let availableYears = ['2021','2022','2023','2024','2025','2026'];
 
-  const filterYear = params?.year     || '2025'; // default to 2025 (most populated)
+  const currentYear = String(new Date().getFullYear());
+  const filterYear  = params?.year || currentYear; // default to current year
   const filterCat  = params?.category || '';
   const page       = parseInt(params?.page || '1');
 
