@@ -3,7 +3,7 @@ import { queryDB, getTitle, getNumber, getSelect, getDate } from '@/lib/notion';
 import BamboojamNav from '@/components/BamboojamNav';
 import { getRole } from '@/lib/auth';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60; // 1-min ISR cache per unique URL
 
 const PAGE_SIZE = 75;
 

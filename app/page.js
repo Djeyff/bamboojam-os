@@ -3,7 +3,9 @@ import { queryDB, getTitle, getNumber, getSelect, getDate, getText } from '@/lib
 import { getRole, canSeeFred } from '@/lib/auth';
 import BamboojamNav from '@/components/BamboojamNav';
 
-export const dynamic = 'force-dynamic';
+// Cache for 3 minutes — revalidates in background (stale-while-revalidate)
+// Each unique URL (incl. ?year=X) gets its own cache entry
+export const revalidate = 180;
 
 const fmt = (n) => { const a=Math.abs(n||0); return (n<0?'-':'')+a.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}); };
 
@@ -17,22 +19,37 @@ export default async function Dashboard({ searchParams }) {
   const params = await searchParams;
   const selectedYear = params?.year || null;
 
-  let expenses=[], revenues=[], periods=[], sylvieLedger=[], fredLedger=[];
-  try { expenses     = await queryDB(getDB('expenses'),     null, [{property:'Date',direction:'descending'}]); } catch(e){}
-  try { revenues     = await queryDB(getDB('revenues'),     null, [{property:'Date',direction:'descending'}]); } catch(e){}
-  try { periods      = await queryDB(getDB('periods'),      null, [{property:'End Date',direction:'descending'}]); } catch(e){}
-  try { sylvieLedger = await queryDB(getDB('sylvieLedger'), null, [{property:'Date',direction:'descending'}]); } catch(e){}
-  if (showFred) {
-    try { fredLedger = await queryDB(getDB('fredLedger'), null, [{property:'Date',direction:'descending'}]); } catch(e){}
+  // ── Build Notion-level filters (push work to API, reduce rows fetched) ────
+  const expFilters = [
+    { property: 'Category', select: { does_not_equal: 'Period Closing' } },
+    { property: 'Category', select: { does_not_equal: 'Year Marker' } },
+  ];
+  if (selectedYear) {
+    expFilters.push({ property: 'Period', select: { equals: selectedYear } });
   }
+  const expFilter = { and: expFilters };
 
-  const allExp = expenses
-    .filter(e => { const cat = getSelect(e,'Category'); return cat !== 'Period Closing' && cat !== 'Year Marker'; })
-    .map(e => ({
-      desc:getTitle(e), amount:getNumber(e,'Total')||0,   // field is "Total" not "Amount"
-      date:getDate(e,'Date'), category:getSelect(e,'Category'),
-      source:getSelect(e,'Source'), period:getSelect(e,'Period'),
-    }));
+  const revFilter = selectedYear
+    ? { property: 'Period', select: { equals: selectedYear } }
+    : null;
+
+  // ── Run ALL queries in parallel — biggest perf win ────────────────────────
+  const [expenses, revenues, periods, sylvieLedger, fredLedger] = await Promise.all([
+    queryDB(getDB('expenses'),     expFilter, [{property:'Date',direction:'descending'}]).catch(()=>[]),
+    queryDB(getDB('revenues'),     revFilter, [{property:'Date',direction:'descending'}]).catch(()=>[]),
+    queryDB(getDB('periods'),      null,      [{property:'End Date',direction:'descending'}]).catch(()=>[]),
+    queryDB(getDB('sylvieLedger'), null,      [{property:'Date',direction:'descending'}]).catch(()=>[]),
+    showFred
+      ? queryDB(getDB('fredLedger'), null, [{property:'Date',direction:'descending'}]).catch(()=>[])
+      : Promise.resolve([]),
+  ]);
+
+  // Period Closing + Year Marker already excluded at Notion query level
+  const allExp = expenses.map(e => ({
+    desc:getTitle(e), amount:getNumber(e,'Total')||0,
+    date:getDate(e,'Date'), category:getSelect(e,'Category'),
+    source:getSelect(e,'Source'), period:getSelect(e,'Period'),
+  }));
   const allRev = revenues.map(r => ({
     desc:getTitle(r), amount:getNumber(r,'Amount')||0,
     date:getDate(r,'Date'), period:getSelect(r,'Period'),
@@ -45,9 +62,11 @@ export default async function Dashboard({ searchParams }) {
     notes:getText(p,'Notes'),
   }));
 
-  const years = [...new Set([...allExp.map(e=>e.date?.slice(0,4)),...allRev.map(r=>r.date?.slice(0,4))].filter(Boolean))].sort().reverse();
-  const filteredExp = selectedYear ? allExp.filter(e=>e.date?.startsWith(selectedYear)) : allExp;
-  const filteredRev = selectedYear ? allRev.filter(r=>r.date?.startsWith(selectedYear)) : allRev;
+  // Year tabs — always show all years regardless of filter
+  const years = ['2021','2022','2023','2024','2025','2026'];
+  // Already filtered at Notion level — no client-side re-filter needed
+  const filteredExp = allExp;
+  const filteredRev = allRev;
 
   const totalRevenue  = filteredRev.reduce((s,r)=>s+r.amount,0);
   const totalExpenses = filteredExp.reduce((s,e)=>s+e.amount,0);

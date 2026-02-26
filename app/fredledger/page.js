@@ -3,7 +3,7 @@ import { queryDB, getTitle, getNumber, getSelect, getDate, getText } from '@/lib
 import { getRole } from '@/lib/auth';
 import BamboojamNav from '@/components/BamboojamNav';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60; // 1-min ISR cache per unique URL
 const fmt = (n) => { const a=Math.abs(n||0); return (n<0?'-':'')+a.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}); };
 
 export default async function FredLedgerPage({ searchParams }) {

@@ -3,7 +3,7 @@ import { queryDB, getTitle, getNumber, getSelect, getDate } from '@/lib/notion';
 import BamboojamNav from '@/components/BamboojamNav';
 import { getRole } from '@/lib/auth';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60; // 1-min ISR cache per unique URL
 const fmt = (n) => { const a=Math.abs(n||0); return (n<0?'-':'')+a.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}); };
 
 export default async function RevenuesPage({ searchParams }) {
@@ -11,8 +11,14 @@ export default async function RevenuesPage({ searchParams }) {
   const params     = await searchParams;
   const filterYear = params?.year || '';
 
-  let revenues = [];
-  try { revenues = await queryDB(getDB('revenues'), null, [{property:'Date',direction:'descending'}]); } catch(e){}
+  // Push year filter to Notion — avoids fetching all 121 rows when filtered
+  const revFilter = filterYear
+    ? { property: 'Period', select: { equals: filterYear } }
+    : null;
+
+  const revenues = await queryDB(
+    getDB('revenues'), revFilter, [{property:'Date',direction:'descending'}]
+  ).catch(() => []);
 
   const allRev = revenues.map(r => ({
     desc:   getTitle(r),
@@ -21,9 +27,9 @@ export default async function RevenuesPage({ searchParams }) {
     period: getSelect(r,'Period')||'',
   }));
 
-  const filtered = filterYear ? allRev.filter(r=>r.period===filterYear) : allRev;
-  const total    = filtered.reduce((s,r)=>s+r.amount,0);
-  const years    = [...new Set(allRev.map(r=>r.period).filter(Boolean))].sort().reverse();
+  const filtered = allRev; // Already filtered at Notion level
+  const total = filtered.reduce((s,r)=>s+r.amount,0);
+  const years = ['2021','2022','2023','2024','2025','2026'];
 
   // Monthly breakdown for chart
   const monthly={};
