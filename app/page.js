@@ -14,10 +14,12 @@ const SYLVIE_PCT = 0.15;
 const JEFF_PCT   = 0.425;
 const FRED_PCT   = 0.425;
 
-// ── Cached data loader — 5 min cache per (year, showFred) combo ──────────────
-// unstable_cache operates at the data layer, bypasses middleware ISR limitations.
-// Each unique (year, showFred) pair gets its own cache entry.
-const loadData = unstable_cache(
+// ── Split cache: fast recent (2 min) + slow stats (1 h) ──────────────────────
+// loadRecent: revenues + expenses only, used for KPIs + recent lists.
+// loadStats:  periods + ledgers (all-time, only needed on All Time tab).
+// Skipping ledgers on year-specific tabs cuts 2 Notion calls per cold load.
+
+const loadRecent = unstable_cache(
   async (year, showFred) => {
     const expFilters = [
       { property: 'Category', select: { does_not_equal: 'Period Closing' } },
@@ -27,23 +29,29 @@ const loadData = unstable_cache(
     const expFilter = { and: expFilters };
     const revFilter = year ? { property: 'Period', select: { equals: year } } : null;
 
-    // All queries in parallel
-    const [expenses, revenues, periods, sylvieLedger, fredLedger] = await Promise.all([
-      queryDB(getDB('expenses'),     expFilter, [{property:'Date',direction:'descending'}]).catch(()=>[]),
-      queryDB(getDB('revenues'),     revFilter, [{property:'Date',direction:'descending'}]).catch(()=>[]),
-      queryDB(getDB('periods'),      null,      [{property:'End Date',direction:'descending'}]).catch(()=>[]),
-      queryDB(getDB('sylvieLedger'), null,      [{property:'Date',direction:'descending'}]).catch(()=>[]),
-      showFred
-        ? queryDB(getDB('fredLedger'), null, [{property:'Date',direction:'descending'}]).catch(()=>[])
-        : Promise.resolve([]),
+    const [expenses, revenues] = await Promise.all([
+      queryDB(getDB('expenses'), expFilter, [{property:'Date',direction:'descending'}]).catch(()=>[]),
+      queryDB(getDB('revenues'), revFilter, [{property:'Date',direction:'descending'}]).catch(()=>[]),
     ]);
-    return { expenses, revenues, periods, sylvieLedger, fredLedger };
+    return { expenses, revenues };
   },
-  ['bamboojam-dashboard-v1'],
-  {
-    revalidate: 300, // 5 min — all year views
-    tags: ['bamboojam-dashboard'],
-  }
+  ['bamboojam-recent-v1'],
+  { revalidate: 120, tags: ['bamboojam-recent'] }
+);
+
+const loadStats = unstable_cache(
+  async (showFred, yearTab) => {
+    // Always fetch periods (needed for KPIs + Period Settlements table)
+    // Skip ledgers on year-specific tabs — they're all-time data, not shown there
+    const [periods, sylvieLedger, fredLedger] = await Promise.all([
+      queryDB(getDB('periods'),      null, [{property:'End Date',direction:'descending'}]).catch(()=>[]),
+      yearTab ? Promise.resolve([]) : queryDB(getDB('sylvieLedger'), null, [{property:'Date',direction:'descending'}]).catch(()=>[]),
+      (yearTab || !showFred) ? Promise.resolve([]) : queryDB(getDB('fredLedger'), null, [{property:'Date',direction:'descending'}]).catch(()=>[]),
+    ]);
+    return { periods, sylvieLedger, fredLedger };
+  },
+  ['bamboojam-stats-v1'],
+  { revalidate: 3600, tags: ['bamboojam-stats'] } // 1h — rarely changes
 );
 
 export default async function Dashboard({ searchParams }) {
@@ -52,9 +60,10 @@ export default async function Dashboard({ searchParams }) {
   const params = await searchParams;
   const selectedYear = params?.year || null;
 
-  // Hits data cache — instant on repeat loads within 5 min
-  const { expenses, revenues, periods, sylvieLedger, fredLedger } =
-    await loadData(selectedYear || '', showFred);
+  // loadRecent: 2 min TTL — revenues + expenses (filtered by year if set)
+  // loadStats:  1 h TTL  — periods + ledgers (all-time; ledgers skipped on year tabs)
+  const { expenses, revenues } = await loadRecent(selectedYear || '', showFred);
+  const { periods, sylvieLedger, fredLedger } = await loadStats(showFred, !!selectedYear);
 
   // Period Closing + Year Marker already excluded at Notion query level
   const allExp = expenses.map(e => ({
@@ -143,9 +152,10 @@ export default async function Dashboard({ searchParams }) {
         </div>
 
         {/* Revenue Split Banner — role-aware */}
+        {/* Sylvie/Jeff shares are all-time only (from period settlements) — hidden on year tabs */}
         <div className="rounded-xl p-5 mb-6" style={{background:'linear-gradient(135deg,rgba(212,168,83,0.1),rgba(212,168,83,0.04))',border:'1px solid rgba(212,168,83,0.2)'}}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{color:'#d4a853'}}>Revenue Split — {label}</p>
-          <div className={`grid gap-4 ${showFred ? 'grid-cols-2 md:grid-cols-5' : 'grid-cols-2 md:grid-cols-4'}`}>
+          <div className={`grid gap-4 ${!selectedYear && showFred ? 'grid-cols-2 md:grid-cols-5' : !selectedYear ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2 md:grid-cols-3'}`}>
             <div>
               <p className="text-xs mb-1" style={{color:'#64748b'}}>Total Revenue</p>
               <p className="text-xl font-bold text-white font-mono">{fmt(totalRevenue)}</p>
@@ -158,18 +168,19 @@ export default async function Dashboard({ searchParams }) {
               <p className="text-xs mb-1" style={{color:'#64748b'}}>Net Revenue</p>
               <p className={`text-xl font-bold font-mono ${netRevenue>=0?'text-emerald-400':'text-red-400'}`}>{fmt(netRevenue)}</p>
             </div>
-            <div>
-              <p className="text-xs mb-1" style={{color:'#d4a853'}}>Sylvie (15%)</p>
-              <p className="text-xl font-bold font-mono" style={{color:'#d4a853'}}>{fmt(sylvieShare)}</p>
-            </div>
-            {showFred ? (
-              <>
-                <div>
-                  <p className="text-xs mb-1" style={{color:'#94a3b8'}}>Jeff = Fred (42.5%)</p>
-                  <p className="text-xl font-bold font-mono text-blue-400">{fmt(jeffShare)} ea</p>
-                </div>
-              </>
-            ) : (
+            {!selectedYear && (
+              <div>
+                <p className="text-xs mb-1" style={{color:'#d4a853'}}>Sylvie (15%)</p>
+                <p className="text-xl font-bold font-mono" style={{color:'#d4a853'}}>{fmt(sylvieShare)}</p>
+              </div>
+            )}
+            {!selectedYear && showFred && (
+              <div>
+                <p className="text-xs mb-1" style={{color:'#94a3b8'}}>{showFred ? 'Jeff = Fred (42.5%)' : "Jeff's Share (42.5%)"}</p>
+                <p className="text-xl font-bold font-mono text-blue-400">{fmt(jeffShare)}{showFred?' ea':''}</p>
+              </div>
+            )}
+            {!selectedYear && !showFred && (
               <div>
                 <p className="text-xs mb-1" style={{color:'#94a3b8'}}>Jeff's Share (42.5%)</p>
                 <p className="text-xl font-bold font-mono text-blue-400">{fmt(jeffShare)}</p>
