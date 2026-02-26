@@ -26,11 +26,13 @@ export default async function Dashboard({ searchParams }) {
     try { fredLedger = await queryDB(getDB('fredLedger'), null, [{property:'Date',direction:'descending'}]); } catch(e){}
   }
 
-  const allExp = expenses.map(e => ({
-    desc:getTitle(e), amount:getNumber(e,'Amount')||0,
-    date:getDate(e,'Date'), category:getSelect(e,'Category'),
-    source:getSelect(e,'Source'), period:getSelect(e,'Period'),
-  }));
+  const allExp = expenses
+    .filter(e => { const cat = getSelect(e,'Category'); return cat !== 'Period Closing' && cat !== 'Year Marker'; })
+    .map(e => ({
+      desc:getTitle(e), amount:getNumber(e,'Total')||0,   // field is "Total" not "Amount"
+      date:getDate(e,'Date'), category:getSelect(e,'Category'),
+      source:getSelect(e,'Source'), period:getSelect(e,'Period'),
+    }));
   const allRev = revenues.map(r => ({
     desc:getTitle(r), amount:getNumber(r,'Amount')||0,
     date:getDate(r,'Date'), period:getSelect(r,'Period'),
