@@ -1,11 +1,12 @@
+import { unstable_cache } from 'next/cache';
 import { getDB } from '@/lib/config';
 import { queryDB, getTitle, getNumber, getSelect, getDate, getText } from '@/lib/notion';
 import { getRole, canSeeFred } from '@/lib/auth';
 import BamboojamNav from '@/components/BamboojamNav';
 
-// Cache for 3 minutes — revalidates in background (stale-while-revalidate)
-// Each unique URL (incl. ?year=X) gets its own cache entry
-export const revalidate = 180;
+// ISR on middleware-protected routes is bypassed on Vercel.
+// Use unstable_cache (data cache) instead — works regardless of middleware.
+export const dynamic = 'force-dynamic';
 
 const fmt = (n) => { const a=Math.abs(n||0); return (n<0?'-':'')+a.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}); };
 
@@ -13,36 +14,47 @@ const SYLVIE_PCT = 0.15;
 const JEFF_PCT   = 0.425;
 const FRED_PCT   = 0.425;
 
+// ── Cached data loader — 5 min cache per (year, showFred) combo ──────────────
+// unstable_cache operates at the data layer, bypasses middleware ISR limitations.
+// Each unique (year, showFred) pair gets its own cache entry.
+const loadData = unstable_cache(
+  async (year, showFred) => {
+    const expFilters = [
+      { property: 'Category', select: { does_not_equal: 'Period Closing' } },
+      { property: 'Category', select: { does_not_equal: 'Year Marker' } },
+    ];
+    if (year) expFilters.push({ property: 'Period', select: { equals: year } });
+    const expFilter = { and: expFilters };
+    const revFilter = year ? { property: 'Period', select: { equals: year } } : null;
+
+    // All queries in parallel
+    const [expenses, revenues, periods, sylvieLedger, fredLedger] = await Promise.all([
+      queryDB(getDB('expenses'),     expFilter, [{property:'Date',direction:'descending'}]).catch(()=>[]),
+      queryDB(getDB('revenues'),     revFilter, [{property:'Date',direction:'descending'}]).catch(()=>[]),
+      queryDB(getDB('periods'),      null,      [{property:'End Date',direction:'descending'}]).catch(()=>[]),
+      queryDB(getDB('sylvieLedger'), null,      [{property:'Date',direction:'descending'}]).catch(()=>[]),
+      showFred
+        ? queryDB(getDB('fredLedger'), null, [{property:'Date',direction:'descending'}]).catch(()=>[])
+        : Promise.resolve([]),
+    ]);
+    return { expenses, revenues, periods, sylvieLedger, fredLedger };
+  },
+  ['bamboojam-dashboard-v1'],
+  {
+    revalidate: 300, // 5 min — all year views
+    tags: ['bamboojam-dashboard'],
+  }
+);
+
 export default async function Dashboard({ searchParams }) {
   const role = getRole();
   const showFred = canSeeFred(role);
   const params = await searchParams;
   const selectedYear = params?.year || null;
 
-  // ── Build Notion-level filters (push work to API, reduce rows fetched) ────
-  const expFilters = [
-    { property: 'Category', select: { does_not_equal: 'Period Closing' } },
-    { property: 'Category', select: { does_not_equal: 'Year Marker' } },
-  ];
-  if (selectedYear) {
-    expFilters.push({ property: 'Period', select: { equals: selectedYear } });
-  }
-  const expFilter = { and: expFilters };
-
-  const revFilter = selectedYear
-    ? { property: 'Period', select: { equals: selectedYear } }
-    : null;
-
-  // ── Run ALL queries in parallel — biggest perf win ────────────────────────
-  const [expenses, revenues, periods, sylvieLedger, fredLedger] = await Promise.all([
-    queryDB(getDB('expenses'),     expFilter, [{property:'Date',direction:'descending'}]).catch(()=>[]),
-    queryDB(getDB('revenues'),     revFilter, [{property:'Date',direction:'descending'}]).catch(()=>[]),
-    queryDB(getDB('periods'),      null,      [{property:'End Date',direction:'descending'}]).catch(()=>[]),
-    queryDB(getDB('sylvieLedger'), null,      [{property:'Date',direction:'descending'}]).catch(()=>[]),
-    showFred
-      ? queryDB(getDB('fredLedger'), null, [{property:'Date',direction:'descending'}]).catch(()=>[])
-      : Promise.resolve([]),
-  ]);
+  // Hits data cache — instant on repeat loads within 5 min
+  const { expenses, revenues, periods, sylvieLedger, fredLedger } =
+    await loadData(selectedYear || '', showFred);
 
   // Period Closing + Year Marker already excluded at Notion query level
   const allExp = expenses.map(e => ({
