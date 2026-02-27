@@ -3,6 +3,7 @@ import { getDB } from '@/lib/config';
 import { queryDB, getTitle, getNumber, getSelect, getDate, getText } from '@/lib/notion';
 import { getRole, canSeeFred } from '@/lib/auth';
 import BamboojamNav from '@/components/BamboojamNav';
+import AddEntryModal from '@/components/AddEntryModal';
 
 // ISR on middleware-protected routes is bypassed on Vercel.
 // Use unstable_cache (data cache) instead — works regardless of middleware.
@@ -137,17 +138,20 @@ export default async function Dashboard({ searchParams }) {
             <h2 className="text-2xl font-bold text-white">Dashboard</h2>
             <p className="text-sm mt-1" style={{color:'#d4a853'}}>BamboojamVilla · {label} · Amounts in DOP</p>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <a href="/" className="px-3 py-1.5 rounded-lg text-sm font-medium"
-              style={!selectedYear?{background:'#d4a853',color:'#0f1a2e'}:{background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.6)'}}>
-              All Time
-            </a>
-            {years.map(y=>(
-              <a key={y} href={`/?year=${y}`} className="px-3 py-1.5 rounded-lg text-sm font-medium"
-                style={selectedYear===y?{background:'#d4a853',color:'#0f1a2e'}:{background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.6)'}}>
-                {y}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex gap-2 flex-wrap">
+              <a href="/" className="px-3 py-1.5 rounded-lg text-sm font-medium"
+                style={!selectedYear?{background:'#d4a853',color:'#0f1a2e'}:{background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.6)'}}>
+                All Time
               </a>
-            ))}
+              {years.map(y=>(
+                <a key={y} href={`/?year=${y}`} className="px-3 py-1.5 rounded-lg text-sm font-medium"
+                  style={selectedYear===y?{background:'#d4a853',color:'#0f1a2e'}:{background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.6)'}}>
+                  {y}
+                </a>
+              ))}
+            </div>
+            <AddEntryModal />
           </div>
         </div>
 
